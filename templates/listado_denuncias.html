@@ -1,0 +1,314 @@
+{% extends "base.html" %}
+
+{% block title %}Listado de Denuncias - Sistema de Denuncias{% endblock %}
+{% block header %}Listado de Denuncias{% endblock %}
+
+{% block content %}
+<div class="row">
+  <div class="col-12">
+    <!-- Filtros -->
+    <div class="card shadow mb-4">
+      <div class="card-body">
+        <form id="filtrosForm" class="row g-3">
+          <div class="col-md-3">
+            <label for="filtroDistrito" class="form-label">Zona</label>
+            <select class="form-select" id="filtroDistrito">
+              <option value="">Todas las zonas</option>
+              <option value="Arequipa">Zona A</option>
+              <option value="Cayma">Zona B</option>
+              <option value="Cerro Colorado">Zona C</option>
+              <option value="Paucarpata">Zona D</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="filtroTipo" class="form-label">Tipo de Denuncia</label>
+            <select class="form-select" id="filtroTipo">
+              <option value="">Todos los tipos</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <label for="filtroFecha" class="form-label">Fecha</label>
+            <input type="date" class="form-control" id="filtroFecha">
+          </div>
+          <div class="col-md-3">
+            <label for="buscarTexto" class="form-label">Buscar</label>
+            <input type="text" class="form-control" id="buscarTexto"
+                   placeholder="Buscar en denunciante, comisaría...">
+          </div>
+          <div class="col-12">
+            <button type="button" class="btn btn-primary" onclick="aplicarFiltros()">
+              <i class="fas fa-filter me-2"></i>Filtrar
+            </button>
+            <button type="button" class="btn btn-secondary" onclick="limpiarFiltros()">
+              <i class="fas fa-times me-2"></i>Limpiar
+            </button>
+            <span class="float-end">
+              <strong id="totalRegistros">{{ denuncias|length }}</strong> denuncias encontradas
+            </span>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabla -->
+    <div class="card shadow">
+      <div class="card-header py-3 d-flex justify-content-between align-items-center">
+        <h6 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-table me-2"></i>Denuncias Registradas
+        </h6>
+        <div>
+          <button class="btn btn-success btn-sm" onclick="exportarExcel()">
+            <i class="fas fa-file-excel me-1"></i>Exportar
+          </button>
+        </div>
+      </div>
+      <div class="card-body">
+        {% if denuncias %}
+        <div class="table-responsive">
+          <table class="table table-bordered table-hover" id="tablaDenuncias">
+            <thead class="table-primary">
+              <tr>
+                <th width="60">#</th>
+                <th>Fecha Registro</th>
+                <th>Hora</th>
+                <th>Comisaría</th>
+                <th>Efectivo Policial</th>
+                <th>Denunciante</th>
+                <th>Distrito</th>
+                <th>Hora Hecho</th>
+                <th>Tipo Denuncia</th>
+                <th>Observaciones</th>
+                <th width="100">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for d in denuncias %}
+              <tr>
+                <td class="text-center">{{ d.id }}</td>
+                <td>{{ d.fecha_registro.strftime('%d/%m/%Y') if d.fecha_registro else '-' }}</td>
+                <td>{{ d.hora_registro.strftime('%H:%M') if d.hora_registro else '-' }}</td>
+                <td>{{ d.comisaria }}</td>
+                <td>{{ d.efectivo }}</td>
+                <td>{{ d.denunciante }}</td>
+                <td><span class="badge bg-info">{{ d.distrito }}</span></td>
+                <td>{{ d.hora_hecho.strftime('%H:%M') if d.hora_hecho else '-' }}</td>
+                <td><span class="badge bg-warning text-dark">{{ d.tipo_denuncia or '-' }}</span></td>
+                <td>
+                  <span title="{{ d.observaciones or '' }}">
+                    {{ d.observaciones[:30] ~ '...' if d.observaciones and d.observaciones|length > 30 else (d.observaciones or 'N/A') }}
+                  </span>
+                </td>
+                <td class="text-center">
+                  <button class="btn btn-sm btn-outline-primary"
+                          onclick="verDetalle({{ d.id }})" title="Ver detalle">
+                    <i class="fas fa-eye"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Paginación -->
+        <nav aria-label="Paginación">
+          <ul class="pagination justify-content-center" id="paginacion"></ul>
+        </nav>
+        {% else %}
+        <div class="text-center text-muted py-5">
+          <i class="fas fa-inbox fa-4x mb-3"></i>
+          <h4>No hay denuncias registradas</h4>
+          <p>Para comenzar, <a href="/carga-denuncias">carga tu primer archivo Excel</a></p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="detalleModal" tabindex="-1">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Detalle de Denuncia</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body" id="detalleContent"></div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// 1) Tomamos la versión serializable del servidor.
+//    Si no viene, será [].
+let denuncias = {{ denuncias_json | default([], true) | tojson }};
+// Usaremos JS sólo si realmente hay datos serializados
+const usarCliente = Array.isArray(denuncias) && denuncias.length > 0;
+
+// Variables para filtros/paginación
+let denunciasFiltradas = usarCliente ? [...denuncias] : [];
+const registrosPorPagina = 10;
+let paginaActual = 1;
+
+// 2) Al cargar, sólo activamos la lógica JS si hay datos cliente.
+//    Si no, dejamos la tabla renderizada por Jinja intacta.
+document.addEventListener('DOMContentLoaded', function () {
+  if (!usarCliente) {
+    // Nada que hacer; mantenemos las filas del servidor.
+    return;
+  }
+  llenarFiltroTipos();
+  // Sincroniza el contador con el tamaño del arreglo cliente
+  const total = document.getElementById('totalRegistros');
+  if (total) total.textContent = denunciasFiltradas.length;
+  mostrarPagina(1);
+});
+
+// ======== Funciones de UI ========
+
+function llenarFiltroTipos() {
+  if (!usarCliente) return;
+  const tipos = [...new Set(denuncias.map(d => d.tipo_denuncia).filter(Boolean))].sort();
+  const select = document.getElementById('filtroTipo');
+  tipos.forEach(tipo => {
+    const option = document.createElement('option');
+    option.value = tipo;
+    option.textContent = tipo;
+    select.appendChild(option);
+  });
+}
+
+function aplicarFiltros() {
+  if (!usarCliente) return;
+  const distrito = document.getElementById('filtroDistrito').value;
+  const tipo = document.getElementById('filtroTipo').value;
+  const fecha = document.getElementById('filtroFecha').value; // yyyy-mm-dd
+  const buscar = document.getElementById('buscarTexto').value.toLowerCase();
+
+  denunciasFiltradas = denuncias.filter(d => {
+    const matchDistrito = !distrito || d.distrito === distrito;
+    const matchTipo     = !tipo || d.tipo_denuncia === tipo;
+    const matchFecha    = !fecha || (d.fecha_registro && d.fecha_registro.slice(0,10) === fecha);
+    const matchBuscar   = !buscar ||
+      (d.denunciante || '').toLowerCase().includes(buscar) ||
+      (d.comisaria   || '').toLowerCase().includes(buscar) ||
+      (d.efectivo    || '').toLowerCase().includes(buscar);
+    return matchDistrito && matchTipo && matchFecha && matchBuscar;
+  });
+
+  const total = document.getElementById('totalRegistros');
+  if (total) total.textContent = denunciasFiltradas.length;
+  mostrarPagina(1);
+}
+
+function limpiarFiltros() {
+  if (!usarCliente) return;
+  document.getElementById('filtrosForm').reset();
+  denunciasFiltradas = [...denuncias];
+  const total = document.getElementById('totalRegistros');
+  if (total) total.textContent = denuncias.length;
+  mostrarPagina(1);
+}
+
+function mostrarPagina(pagina) {
+  if (!usarCliente) return;
+  paginaActual = pagina;
+  const inicio = (pagina - 1) * registrosPorPagina;
+  const fin = inicio + registrosPorPagina;
+  const datosPagina = denunciasFiltradas.slice(inicio, fin);
+
+  const tbody = document.querySelector('#tablaDenuncias tbody');
+  tbody.innerHTML = '';
+  datosPagina.forEach(d => tbody.appendChild(crearFilaDenuncia(d)));
+
+  generarPaginacion();
+}
+
+function crearFilaDenuncia(d) {
+  const tr = document.createElement('tr');
+  const obs = d.observaciones || 'N/A';
+  const obsCorta = obs.length > 30 ? obs.substring(0, 30) + '...' : obs;
+
+  tr.innerHTML = `
+    <td class="text-center">${d.id}</td>
+    <td>${d.fecha_registro ? new Date(d.fecha_registro).toLocaleDateString('es-ES') : '-'}</td>
+    <td>${d.hora_registro ? d.hora_registro.slice(0,5) : '-'}</td>
+    <td>${d.comisaria || ''}</td>
+    <td>${d.efectivo || ''}</td>
+    <td>${d.denunciante || ''}</td>
+    <td><span class="badge bg-info">${d.distrito || ''}</span></td>
+    <td>${d.hora_hecho ? d.hora_hecho.slice(0,5) : '-'}</td>
+    <td><span class="badge bg-warning text-dark">${d.tipo_denuncia || '-'}</span></td>
+    <td title="${obs}">${obsCorta}</td>
+    <td class="text-center">
+      <button class="btn btn-sm btn-outline-primary"
+              onclick="verDetalle(${d.id})" title="Ver detalle">
+        <i class="fas fa-eye"></i>
+      </button>
+    </td>
+  `;
+  return tr;
+}
+
+function generarPaginacion() {
+  if (!usarCliente) return;
+  const totalPaginas = Math.ceil(denunciasFiltradas.length / registrosPorPagina);
+  const paginacion = document.getElementById('paginacion');
+  if (totalPaginas <= 1) { paginacion.innerHTML = ''; return; }
+
+  let html = '';
+  if (paginaActual > 1) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="mostrarPagina(${paginaActual - 1})">Anterior</a></li>`;
+  }
+  for (let i = 1; i <= totalPaginas; i++) {
+    html += (i === paginaActual)
+      ? `<li class="page-item active"><span class="page-link">${i}</span></li>`
+      : `<li class="page-item"><a class="page-link" href="#" onclick="mostrarPagina(${i})">${i}</a></li>`;
+  }
+  if (paginaActual < totalPaginas) {
+    html += `<li class="page-item"><a class="page-link" href="#" onclick="mostrarPagina(${paginaActual + 1})">Siguiente</a></li>`;
+  }
+  paginacion.innerHTML = html;
+}
+
+function verDetalle(id) {
+  if (!usarCliente) return;
+  const d = denuncias.find(x => x.id === id);
+  if (!d) return;
+  const content = `
+    <div class="row">
+      <div class="col-md-6">
+        <p><strong>ID:</strong> ${d.id}</p>
+        <p><strong>Fecha de Registro:</strong> ${d.fecha_registro ? new Date(d.fecha_registro).toLocaleDateString('es-ES') : '-'}</p>
+        <p><strong>Hora de Registro:</strong> ${d.hora_registro ? d.hora_registro.slice(0,5) : '-'}</p>
+        <p><strong>Comisaría:</strong> ${d.comisaria || ''}</p>
+        <p><strong>Efectivo Policial:</strong> ${d.efectivo || ''}</p>
+      </div>
+      <div class="col-md-6">
+        <p><strong>Denunciante:</strong> ${d.denunciante || ''}</p>
+        <p><strong>Distrito:</strong> <span class="badge bg-info">${d.distrito || ''}</span></p>
+        <p><strong>Hora del Hecho:</strong> ${d.hora_hecho ? d.hora_hecho.slice(0,5) : '-'}</p>
+        <p><strong>Tipo de Denuncia:</strong> <span class="badge bg-warning text-dark">${d.tipo_denuncia || '-'}</span></p>
+      </div>
+      <div class="col-12 mt-3">
+        <p><strong>Observaciones:</strong></p>
+        <div class="bg-light p-3 rounded">
+          ${d.observaciones || 'Sin observaciones'}
+        </div>
+      </div>
+    </div>`;
+  document.getElementById('detalleContent').innerHTML = content;
+  new bootstrap.Modal(document.getElementById('detalleModal')).show();
+}
+
+function exportarExcel() {
+  alert('Función de exportación implementada. Los datos se exportarían a Excel.');
+}
+</script>
+{% endblock %}

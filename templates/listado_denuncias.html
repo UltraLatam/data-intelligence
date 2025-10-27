@@ -77,7 +77,7 @@
                 <th>Comisaría</th>
                 <th>Efectivo Policial</th>
                 <th>Denunciante</th>
-                <th>Distrito</th>
+                <th>Zona</th>
                 <th>Hora Hecho</th>
                 <th>Tipo Denuncia</th>
                 <th>Observaciones</th>
@@ -295,7 +295,7 @@ function verDetalle(id) {
       </div>
       <div class="col-md-6">
         <p><strong>Denunciante:</strong> ${d.denunciante || ''}</p>
-        <p><strong>Distrito:</strong> <span class="badge bg-info">${d.distrito || ''}</span></p>
+        <p><strong>Zona:</strong> <span class="badge bg-info">${d.distrito || ''}</span></p>
         <p><strong>Hora del Hecho:</strong> ${d.hora_hecho ? d.hora_hecho.slice(0,5) : '-'}</p>
         <p><strong>Tipo de Denuncia:</strong> <span class="badge bg-warning text-dark">${d.tipo_denuncia || '-'}</span></p>
       </div>

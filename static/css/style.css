@@ -67,8 +67,8 @@ main {
 
 /* Progress bar personalizada */
 .progress {
-    height: 8px;
-    border-radius: 4px;
+    height: 20px;
+    border-radius: 8px;
     background-color: #e3e6f0;
 }
 
@@ -259,3 +259,8 @@ main {
     --bs-text-opacity: 1;
     color: #0f2770 !important;
 }
+
+.progress-bar {
+    padding: 0px 10px 0px 10px;}
+
+    

@@ -21,33 +21,48 @@
                     <ul class="nav flex-column">
                         <li class="nav-item">
                             <a class="nav-link text-white {% if request.url.path == '/' %}active{% endif %}" 
-                               href="/">
+                            href="/">
                                 <i class="fas fa-tachometer-alt me-2"></i>
                                 Panel Principal
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-white {% if 'carga-denuncias' in request.url.path %}active{% endif %}" 
-                               href="/carga-denuncias">
+                            href="/carga-denuncias">
                                 <i class="fas fa-upload me-2"></i>
                                 Carga de Denuncias
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-white {% if 'listado-denuncias' in request.url.path %}active{% endif %}" 
-                               href="/listado-denuncias">
+                            href="/listado-denuncias">
                                 <i class="fas fa-list me-2"></i>
                                 Listado de Denuncias
                             </a>
                         </li>
                         <li class="nav-item">
                             <a class="nav-link text-white {% if 'prediccion-ia' in request.url.path %}active{% endif %}" 
-                               href="/prediccion-ia">
-                                <i class="fa-solid fa-map-location"></i>
-                                Predicción  IA
+                            href="/prediccion-ia">
+                                <i class="fa-solid fa-map-location-dot me-2"></i>
+                                Predicción IA
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white {% if 'zonas' in request.url.path %}active{% endif %}" 
+                            href="/zonas">
+                                <i class="fa-solid fa-map me-2"></i>
+                                Zonas
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white {% if 'horarios' in request.url.path %}active{% endif %}" 
+                            href="/horarios">
+                                <i class="fa-solid fa-clock me-2"></i>
+                                Horarios
                             </a>
                         </li>
                     </ul>
+
                 </div>
             </nav>
 

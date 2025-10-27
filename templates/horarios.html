@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+
+{% block title %}Horarios{% endblock %}
+{% block header %}Análisis por Horarios{% endblock %}
+
+{% block content %}
+
+<div class="row">
+    <div class="col-12 col-lg-7">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <i class="fa-solid fa-clock me-2"></i>
+                Frecuencia de Denuncias por Franja Horaria
+            </div>
+            <div class="card-body">
+                {% if horarios_stats %}
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle">
+                            <thead class="table-primary">
+                                <tr>
+                                    <th style="width:40%">Franja Horaria</th>
+                                    <th style="width:15%" class="text-center">Denuncias</th>
+                                    <th>Intensidad</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% set total_h = 0 %}
+                                {% for item in horarios_stats %}
+                                    {% set total_h = total_h + item.denuncias %}
+                                {% endfor %}
+
+                                {% for item in horarios_stats %}
+                                {% set pct = (item.denuncias / total_h * 100) | round(1) if total_h > 0 else 0 %}
+                                <tr>
+                                    <td class="fw-semibold">{{ item.label }}</td>
+                                    <td class="text-center">{{ item.denuncias }}</td>
+                                    <td>
+                                        <div class="d-flex align-items-center gap-2">
+                                            <span class="badge bg-warning text-dark">{{ pct }}%</span>
+                                            <div class="progress flex-grow-1" style="height:6px;">
+                                                <div class="progress-bar bg-warning" role="progressbar"
+                                                     style="width: {{ pct }}%;"></div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-light">
+                                    <th class="text-end">TOTAL</th>
+                                    <th class="text-center">{{ total_h }}</th>
+                                    <th></th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted text-center py-4 mb-0">
+                        No hay datos cargados.
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-5">
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-light">
+                <i class="fa-solid fa-helmet-safety me-2"></i>
+                Recomendación Operativa
+            </div>
+            <div class="card-body small">
+                <p class="mb-2">
+                    Este panel está pensado para que el Serenazgo / PNP pueda decidir
+                    <strong>dónde y cuándo reforzar patrullaje</strong>.
+                </p>
+                <ul class="mb-2">
+                    <li>Franja con más denuncias = patrullaje prioritario.</li>
+                    <li>Franja moderada = patrullaje preventivo.</li>
+                    <li>Franja baja = monitoreo estándar.</li>
+                </ul>
+                <p class="text-muted mb-0">
+                    Más adelante esto se va a vincular con el módulo de Predicción IA.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

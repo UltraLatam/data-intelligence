@@ -19,6 +19,7 @@ class DenunciaBase(BaseModel):
     hora_hecho: Optional[time] = None
     tipo_denuncia: Optional[str] = None
     observaciones: Optional[str] = None
+    direccion_ocurrencia: Optional[str] = None
 
 class DenunciaCreate(DenunciaBase):
     pass

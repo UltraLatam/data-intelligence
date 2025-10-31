@@ -133,3 +133,26 @@ def get_denuncias(skip: int = 0, limit: int = 100, db: Session = Depends(get_db)
 @router.get("/stats/", response_model=schemas.DashboardStats)
 def get_dashboard_stats(db: Session = Depends(get_db)):
     return crud.get_dashboard_stats(db)
+
+# --------------------- 🔥 ENDPOINT MAPA DE CALOR ---------------------
+@router.get("/mapa")
+def obtener_incidentes(zona: str = "", turno: str = "", tipo: str = "", db: Session = Depends(get_db)):
+    """
+    Devuelve coordenadas (latitud, longitud) de incidentes filtrados.
+    Requiere que las denuncias tengan campos de ubicación.
+    """
+    query = db.query(models.Denuncia)
+
+    if zona:
+        query = query.filter(models.Denuncia.zona == zona)
+    if turno:
+        query = query.filter(models.Denuncia.turno == turno)
+    if tipo:
+        query = query.filter(models.Denuncia.tipo_denuncia == tipo)
+
+    resultados = query.all()
+    return [
+        {"latitud": d.latitud, "longitud": d.longitud, "intensidad": 1}
+        for d in resultados
+        if getattr(d, "latitud", None) and getattr(d, "longitud", None)
+    ]
